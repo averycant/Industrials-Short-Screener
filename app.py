@@ -80,7 +80,30 @@ right.metric(
     "Matching rows with missing metrics",
     int(filtered["data_status"].eq("Incomplete").sum())
 )
+# Label matches using the filters the user selected
+filtered["signal"] = "SELL candidate"
 
+filtered["screen_reason"] = filtered.apply(
+    lambda row: (
+        f"Accrual percentile {row['accrual_percentile']:.1f} "
+        f"meets minimum {minimum_percentile}"
+        + (
+            f"; Altman Z {row['altman_z']:.2f} "
+            f"is below {z_cutoff:.2f}"
+            if use_z_filter else ""
+        )
+    ),
+    axis=1
+)
+
+filtered["equity_flag"] = filtered["bm"].apply(
+    lambda value: (
+        "Missing B/M" if pd.isna(value)
+        else "Negative book equity" if value < 0
+        else "Zero book equity" if value == 0
+        else ""
+    )
+)
 st.subheader("Screening results")
 
 st.caption(
