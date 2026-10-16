@@ -51,7 +51,35 @@ z_cutoff = st.sidebar.number_input(
     step=0.1,
     format="%.2f"
 )
+st.sidebar.subheader("Additional filters")
 
+use_gpa = st.sidebar.checkbox("Filter for low GPA")
+
+gpa_max = st.sidebar.number_input(
+    "Maximum GPA",
+    value=0.20,
+    step=0.01,
+    format="%.3f"
+)
+
+use_bm = st.sidebar.checkbox("Filter for low positive B/M")
+
+bm_max = st.sidebar.number_input(
+    "Maximum positive B/M",
+    min_value=0.0,
+    value=0.30,
+    step=0.01,
+    format="%.3f"
+)
+
+use_snoa = st.sidebar.checkbox("Filter for high SNOA")
+
+snoa_min = st.sidebar.number_input(
+    "Minimum SNOA",
+    value=0.70,
+    step=0.01,
+    format="%.3f"
+)
 # Apply every selected filter to the results
 filtered = df[
     df["sector"].isin(selected_sectors)
@@ -63,7 +91,24 @@ if use_z_filter:
         filtered["altman_z"].notna()
         & filtered["altman_z"].lt(z_cutoff)
     ]
+if use_gpa:
+    filtered = filtered[
+        filtered["gpa"].notna()
+        & filtered["gpa"].le(gpa_max)
+    ]
 
+if use_bm:
+    filtered = filtered[
+        filtered["bm"].notna()
+        & filtered["bm"].gt(0)
+        & filtered["bm"].le(bm_max)
+    ]
+
+if use_snoa:
+    filtered = filtered[
+        filtered["snoa"].notna()
+        & filtered["snoa"].ge(snoa_min)
+    ]
 filtered = filtered.sort_values(
     "accrual_percentile",
     ascending=False
@@ -95,7 +140,14 @@ filtered["screen_reason"] = filtered.apply(
     ),
     axis=1
 )
+if use_gpa:
+    filtered["screen_reason"] += f"; GPA <= {gpa_max:.3f}"
 
+if use_bm:
+    filtered["screen_reason"] += f"; 0 < B/M <= {bm_max:.3f}"
+
+if use_snoa:
+    filtered["screen_reason"] += f"; SNOA >= {snoa_min:.3f}"
 filtered["equity_flag"] = filtered["bm"].apply(
     lambda value: (
         "Missing B/M" if pd.isna(value)
