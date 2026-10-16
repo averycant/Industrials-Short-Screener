@@ -215,3 +215,67 @@ st.caption(
     "Class project prototype. PMAN and final BUY/SELL classification "
     "have not yet been implemented."
 )
+st.divider()
+st.subheader("Company detail")
+
+if filtered.empty:
+    st.info("Adjust the filters to select a company for analysis.")
+else:
+    selected_ticker = st.selectbox(
+        "Select a company from the screening results",
+        options=filtered["ticker"].tolist()
+    )
+
+    company_row = filtered.loc[
+        filtered["ticker"] == selected_ticker
+    ].iloc[0]
+
+    st.write(f"**{company_row['company']} ({selected_ticker})**")
+    st.write(company_row["screen_reason"])
+
+    metric_names = {
+        "gpa": "GPA",
+        "bm": "B/M",
+        "sta": "STA",
+        "snoa": "SNOA",
+        "altman_z": "Altman Z"
+    }
+
+    comparison = []
+
+    for column, label in metric_names.items():
+        # Compare B/M only among companies with positive book equity
+        reference = df[column].dropna()
+
+        if column == "bm":
+            reference = reference[reference > 0]
+
+        comparison.append({
+            "Metric": label,
+            "Company value": company_row[column],
+            "Sample median": reference.median(),
+            "Reference observations": len(reference)
+        })
+
+    st.dataframe(
+        pd.DataFrame(comparison).round(4),
+        hide_index=True,
+        use_container_width=True
+    )
+
+    st.caption(
+        "Medians use the full loaded sample, before sidebar filters. "
+        "The B/M median includes only positive B/M values. "
+        "Negative company B/M values indicate negative book equity "
+        "and should be interpreted separately."
+    )
+
+    st.write(
+        f"**Fiscal year-end:** {company_row['fiscal_year_end']}  \n"
+        f"**Market data date:** {company_row['market_data_date']}"
+    )
+
+    if company_row["data_status"] == "Incomplete":
+        st.warning(
+            f"Missing metrics: {company_row['missing_metrics']}"
+        )
