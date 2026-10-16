@@ -279,3 +279,91 @@ else:
         st.warning(
             f"Missing metrics: {company_row['missing_metrics']}"
         )
+st.divider()
+st.subheader("Manage an existing short")
+
+st.caption(
+    "Enter prices manually using the same currency. "
+    "Returns exclude borrowing fees, dividends owed, and trading costs."
+)
+
+position_ticker = st.selectbox(
+    "Ticker you are shorting",
+    options=sorted(df["ticker"].dropna().unique()),
+    key="position_ticker"
+)
+
+entry_price = st.number_input(
+    "Short-entry price per share",
+    min_value=0.01,
+    value=100.00,
+    step=0.01
+)
+
+current_price = st.number_input(
+    "Current price per share",
+    min_value=0.01,
+    value=100.00,
+    step=0.01,
+    help="Enter a current quote. This app does not fetch live prices."
+)
+
+shares = st.number_input(
+    "Number of shares shorted",
+    min_value=1,
+    value=10,
+    step=1
+)
+
+profit_target = st.number_input(
+    "Profit target (% of entry value)",
+    min_value=0.1,
+    max_value=99.9,
+    value=20.0,
+    step=1.0
+)
+
+stop_loss = st.number_input(
+    "Stop-loss (% of entry value)",
+    min_value=0.1,
+    value=10.0,
+    step=1.0
+)
+
+evaluate_position = st.button("Evaluate short position")
+
+if evaluate_position:
+    pnl = (entry_price - current_price) * shares
+    return_pct = (entry_price - current_price) / entry_price * 100
+
+    target_price = entry_price * (1 - profit_target / 100)
+    stop_price = entry_price * (1 + stop_loss / 100)
+
+    col1, col2 = st.columns(2)
+    col1.metric("Unrealized profit / loss before costs", f"{pnl:,.2f}")
+    col2.metric("Return on entry value", f"{return_pct:.2f}%")
+
+    st.write(f"**Position:** {position_ticker}")
+    st.write(f"**Profit-target cover price:** {target_price:,.2f}")
+    st.write(f"**Stop-loss cover price:** {stop_price:,.2f}")
+
+    if current_price <= target_price:
+        st.success(
+            "BUY / COVER candidate: your selected profit target "
+            "has been reached."
+        )
+    elif current_price >= stop_price:
+        st.error(
+            "BUY / COVER candidate: your selected stop-loss "
+            "has been reached."
+        )
+    else:
+        st.info(
+            "Neither selected exit threshold has been reached."
+        )
+
+    st.caption(
+        "This checks your entered prices against your chosen rules. "
+        "It does not monitor prices or place orders. "
+        "Return on entry value is not return on margin capital."
+    )
