@@ -213,7 +213,7 @@ st.caption(
 )
 
 columns = [
-    "ticker", "company", "signal", "screen_reason",
+    "ticker", "company", "signal", "signal_reason", "screen_reason",
     "gpa", "bm", "equity_flag", "sta", "snoa",
     "accrual_percentile", "altman_z",
     "fiscal_year_end", "market_data_date",
