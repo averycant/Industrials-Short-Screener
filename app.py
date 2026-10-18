@@ -126,7 +126,7 @@ right.metric(
     int(filtered["data_status"].eq("Incomplete").sum())
 )
 # Label matches using the filters the user selected
-filtered["signal"] = "SELL candidate"
+filtered["signal"] = "Screen match"
 
 filtered["screen_reason"] = filtered.apply(
     lambda row: (
