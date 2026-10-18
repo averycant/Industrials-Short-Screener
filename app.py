@@ -126,7 +126,56 @@ right.metric(
     int(filtered["data_status"].eq("Incomplete").sum())
 )
 # Label matches using the filters the user selected
-filtered["signal"] = "Screen match"
+# Fixed project rule: independent of sidebar display filters
+def classify_short_candidate(row):
+    if pd.isna(row["accrual_percentile"]) or pd.isna(row["altman_z"]):
+        return "Insufficient data"
+
+    if row["accrual_percentile"] >= 80 and row["altman_z"] < 1.81:
+        return "SELL candidate"
+
+    return "No signal"
+
+
+def explain_short_signal(row):
+    if pd.isna(row["accrual_percentile"]) or pd.isna(row["altman_z"]):
+        return "Missing accrual percentile or Altman Z."
+
+    reasons = [
+        (
+            f"Accrual percentile {row['accrual_percentile']:.1f} "
+            + ("meets >= 80" if row["accrual_percentile"] >= 80
+               else "is below 80")
+        ),
+        (
+            f"Altman Z {row['altman_z']:.2f} "
+            + ("is below 1.81" if row["altman_z"] < 1.81
+               else "is at or above 1.81")
+        )
+    ]
+
+    return "; ".join(reasons)
+
+
+filtered["signal"] = filtered.apply(
+    classify_short_candidate, axis=1
+)
+
+filtered["signal_reason"] = pd.Series(
+    [
+        explain_short_signal(row)
+        for _, row in filtered.iterrows()
+    ],
+    index=filtered.index,
+    dtype="string"
+)
+
+st.caption(
+    "SELL candidate rule: accrual percentile >= 80 AND Altman Z < 1.81. "
+    "Sidebar filters control which companies are displayed; "
+    "they do not change this classification rule. "
+    "This is a project screening rule, not a validated trading strategy."
+)
 
 filtered["screen_reason"] = filtered.apply(
     lambda row: (
